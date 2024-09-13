@@ -88,6 +88,7 @@ mv ${TEMP_DIR}/redhat-buildpacks-ubi-base-stack-* ${BUILDPACK_PROJECTS}/ubi-base
 cd ${BUILDPACK_PROJECTS}/ubi-base-stack
 
 echo "### Execute: jam create-stack ..."
+export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/podman/podman.sock
 SOURCE_PATH="."
 cat ${SOURCE_PATH}/images.json | jq -c '.images[]' | while read -r image; do
   NAME=$(echo "$image" | jq -r '.name')

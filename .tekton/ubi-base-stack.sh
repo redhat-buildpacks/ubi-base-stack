@@ -75,25 +75,11 @@ mv cosign-linux-amd64 ${USER_BIN_DIR}/cosign
 chmod +x ${USER_BIN_DIR}/cosign
 cosign version
 
-echo "### Install go ###"
-curl -sSL "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" | tar -C ${TEMP_DIR} -xz go
-mkdir -p ${USER_BIN_DIR}/go
-mv ${TEMP_DIR}/go ${USER_BIN_DIR}
-chmod +x ${USER_BIN_DIR}/go
-
-mkdir -p $HOME/workspace
-export GOPATH=$HOME/workspace
-export GOROOT=${USER_BIN_DIR}/go
-export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
-go version
-
-echo "### Install pack ###"
-curl -sSL "https://github.com/buildpacks/pack/releases/download/${PACK_CLI_VERSION}/pack-${PACK_CLI_VERSION}-linux.tgz" | tar -C ${TEMP_DIR} --no-same-owner -xzv pack
-mv ${TEMP_DIR}/pack ${USER_BIN_DIR}
-
-echo "### Pack version ###"
-pack --version
-pack config experimental true
+echo "Installing jam: ${JAM_VERSION}"
+curl -O -sSL "https://github.com/paketo-buildpacks/jam/releases/download/${JAM_VERSION}/jam-linux-amd64"
+mv jam-linux-amd64 ${USER_BIN_DIR}/jam
+chmod +x ${USER_BIN_DIR}/jam
+jam version
 
 echo "### Fetch the tarball of the buildpack project to build"
 echo "### Git repo: ${REPOSITORY_TO_FETCH}"
@@ -101,17 +87,42 @@ curl -sSL "${REPOSITORY_TO_FETCH}/tarball/main" | tar -xz -C ${TEMP_DIR}
 mv ${TEMP_DIR}/redhat-buildpacks-ubi-base-stack-* ${BUILDPACK_PROJECTS}/ubi-base-stack
 cd ${BUILDPACK_PROJECTS}/ubi-base-stack
 
-echo "### Build the builder image using pack"
-for build_arg in "${BUILD_ARGS[@]}"; do
-  PACK_ARGS+=" $build_arg"
+echo "### Execute: jam create-stack ..."
+cat images.json | jq -c '.images[]' | while read -r image; do
+  NAME=$(echo "$image" | jq -r '.name')
+  CONFIG_DIR=$(echo "$image" | jq -r '.config_dir')
+  OUTPUT_DIR=$(echo "$image" | jq -r '.output_dir')
+  BUILD_IMAGE=$(echo "$image" | jq -r '.build_image')
+  RUN_IMAGE=$(echo "$image" | jq -r '.run_image')
+
+  build_receipt_filename=$(echo "$image" | jq -r '.build_receipt_filename')
+  run_receipt_filename=$(echo "$image" | jq -r '.run_receipt_filename')
+
+  echo "Name: ${NAME}"
+  echo "Config Dir: ${CONFIG_DIR}"
+  echo "Output Dir: ${OUTPUT_DIR}"
+
+  echo "Build Image: ${BUILD_IMAGE}"
+  echo "Run Image: ${RUN_IMAGE}"
+
+  echo "Build Receipt Filename: $build_receipt_filename"
+  echo "Run Receipt Filename: $run_receipt_filename"
+  echo "----"
+
+  STACK_DIR=${SOURCE_PATH}/${CONFIG_DIR}
+  mkdir -p "${STACK_DIR}/${OUTPUT_DIR}"
+
+  # Copy the images.json file to the stack folder otherwise docker build will fail:
+  cp images.json ${STACK_DIR}
+
+  args=(
+    --config "${STACK_DIR}/stack.toml"
+    --build-output "${STACK_DIR}/${OUTPUT_DIR}/build.oci"
+    --run-output "${STACK_DIR}/${OUTPUT_DIR}/run.oci"
+  )
+  echo "jam create-stack \"${args[@]}\""
+  jam create-stack "${args[@]}" || echo "The command failed but we continue ..."
 done
-
-echo "### Pack extra args: $PACK_ARGS"
-
-echo "### Execute: pack builder create ..."
-export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/podman/podman.sock
-echo "pack builder create ${IMAGE} --config builder.toml ${PACK_ARGS}"
-pack builder create ${IMAGE} --config builder.toml ${PACK_ARGS}
 
 echo "### Export the image as OCI"
 podman push "$IMAGE" "oci:konflux-final-image:$IMAGE"
@@ -158,7 +169,7 @@ rsync -ra scripts "$SSH_HOST:$BUILD_DIR"
 rsync -ra "$HOME/.docker/" "$SSH_HOST:$BUILD_DIR/.docker/"
 
 ssh $SSH_ARGS "$SSH_HOST" \
-  "REPOSITORY_TO_FETCH=${REPOSITORY_TO_FETCH} BUILDER_IMAGE=$BUILDER_IMAGE PLATFORM=$PLATFORM IMAGE=$IMAGE PACK_CLI_VERSION=$PACK_CLI_VERSION GO_VERSION=$GO_VERSION BUILD_ARGS=$BUILD_ARGS" BUILD_DIR=$BUILD_DIR \
+  "REPOSITORY_TO_FETCH=${REPOSITORY_TO_FETCH} BUILDER_IMAGE=$BUILDER_IMAGE PLATFORM=$PLATFORM IMAGE=$IMAGE BUILD_ARGS=$BUILD_ARGS" BUILD_DIR=$BUILD_DIR \
    scripts/script-build.sh
 
 echo "### rsync folders from VM to pod"

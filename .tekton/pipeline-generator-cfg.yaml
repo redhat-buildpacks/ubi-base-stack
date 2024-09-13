@@ -35,8 +35,7 @@ job:
 
         # Buildpack
         - REPOSITORY_TO_FETCH: "https://github.com/redhat-buildpacks/ubi-base-stack"
-        - PACK_CLI_VERSION: "v0.35.1"
-        - GO_VERSION: "1.23.0"
+        - JAM_VERSION: "v2.9.0"
         - BUILD_ARGS:
             - "-v"
       workspaces:
@@ -56,8 +55,7 @@ job:
         - PLATFORM: $(params.PLATFORM)
         - REPOSITORY_TO_FETCH: $(params.REPOSITORY_TO_FETCH)
         - IMAGE: $(params.output-image)
-        - PACK_CLI_VERSION: $(params.PACK_CLI_VERSION)
-        - GO_VERSION: $(params.GO_VERSION)
+        - JAM_VERSION: $(params.JAM_VERSION)
 
       args:
         - $(params.BUILD_ARGS[*])

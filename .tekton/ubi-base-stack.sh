@@ -76,7 +76,7 @@ chmod +x ${USER_BIN_DIR}/cosign
 cosign version
 
 echo "Installing jam: ${JAM_VERSION}"
-curl -O -sSL "https://github.com/paketo-buildpacks/jam/releases/download/${JAM_VERSION}/jam-linux-amd64"
+curl -O -sSL https://github.com/paketo-buildpacks/jam/releases/download/${JAM_VERSION}/jam-linux-amd64
 mv jam-linux-amd64 ${USER_BIN_DIR}/jam
 chmod +x ${USER_BIN_DIR}/jam
 jam version
@@ -169,7 +169,7 @@ rsync -ra scripts "$SSH_HOST:$BUILD_DIR"
 rsync -ra "$HOME/.docker/" "$SSH_HOST:$BUILD_DIR/.docker/"
 
 ssh $SSH_ARGS "$SSH_HOST" \
-  "REPOSITORY_TO_FETCH=${REPOSITORY_TO_FETCH} BUILDER_IMAGE=$BUILDER_IMAGE PLATFORM=$PLATFORM IMAGE=$IMAGE BUILD_ARGS=$BUILD_ARGS" BUILD_DIR=$BUILD_DIR \
+  "REPOSITORY_TO_FETCH=${REPOSITORY_TO_FETCH} BUILDER_IMAGE=$BUILDER_IMAGE PLATFORM=$PLATFORM JAM_VERSION=$JAM_VERSION IMAGE=$IMAGE BUILD_ARGS=$BUILD_ARGS" BUILD_DIR=$BUILD_DIR \
    scripts/script-build.sh
 
 echo "### rsync folders from VM to pod"

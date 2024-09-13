@@ -88,7 +88,8 @@ mv ${TEMP_DIR}/redhat-buildpacks-ubi-base-stack-* ${BUILDPACK_PROJECTS}/ubi-base
 cd ${BUILDPACK_PROJECTS}/ubi-base-stack
 
 echo "### Execute: jam create-stack ..."
-cat images.json | jq -c '.images[]' | while read -r image; do
+SOURCE_PATH="."
+cat ${SOURCE_PATH}/images.json | jq -c '.images[]' | while read -r image; do
   NAME=$(echo "$image" | jq -r '.name')
   CONFIG_DIR=$(echo "$image" | jq -r '.config_dir')
   OUTPUT_DIR=$(echo "$image" | jq -r '.output_dir')

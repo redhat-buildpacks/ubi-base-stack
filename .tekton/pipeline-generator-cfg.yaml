@@ -1,0 +1,80 @@
+# The type will be used by the application to generate the resources for the selected provider: konflux, tekton
+type: konflux
+domain: remote-build
+namespace: cmoullia-tenant
+
+repository:
+  url: https://github.com/redhat-buildpacks/ubi-base-stack
+
+application:
+  name: buildpack-remote
+  enable: false
+component:
+  name: ubi-base-stack
+  enable: false
+
+job:
+  resourceType: PipelineRun
+  name: ubi-base-stack
+  description: PipelineRun using jam tool to build the build and run stack images
+  timeout: "0h15m0s"
+
+  params:
+    # Konflux param
+    - output-image: quay.io/redhat-user-workloads/cmoullia-tenant/buildpack-remote/ubi-base-stack:{{revision}}
+
+  actions:
+    - name: jam
+      runAfter: prefetch-dependencies
+      image: quay.io/konflux-ci/buildah-task:latest@sha256:860a239c5f25376a435a514ae6d53a5c75b1fa492461d17774e9b7cb32d1e275
+      params:
+        # Konflux
+        - PLATFORM: linux-mlarge/amd64 # linux-root/amd64 # We need it in order to configure the multi-arch-platform controller properly - see: https://github.com/redhat-appstudio/infra-deployments/blob/main/components/multi-platform-controller/production/host-config.yaml
+        # Image to use to execute remotely the SSH script using podman run
+        - BUILDER_IMAGE: quay.io/konflux-ci/buildah-task:latest@sha256:860a239c5f25376a435a514ae6d53a5c75b1fa492461d17774e9b7cb32d1e275
+
+        # Buildpack
+        - PACK_CLI_VERSION: "v0.35.1"
+        - GO_VERSION: "1.23.0"
+        - BUILD_ARGS:
+            - "-v"
+      workspaces:
+        - name: source
+          workspace: workspace
+
+      results:
+        - IMAGE_URL: "Image repository and tag where the built image was pushed"
+        - IMAGE_DIGEST: "Digest of the image just built"
+        - IMAGE_REF: "Image reference of the built image"
+        - BASE_IMAGES_DIGESTS: "Digests of the base images used for build"
+        - SBOM_BLOB_URL: "SBOM Image URL"
+
+      # env var ar not injected within the tekton's pod running the script
+      envs:
+        - BUILDER_IMAGE: $(params.BUILDER_IMAGE)
+        - PLATFORM: $(params.PLATFORM)
+        - IMAGE: $(params.output-image)
+        - PACK_CLI_VERSION: $(params.PACK_CLI_VERSION)
+        - GO_VERSION: $(params.GO_VERSION)
+
+      args:
+        - $(params.BUILD_ARGS[*])
+
+      #scriptFileUrl: https://raw.githubusercontent.com/ch007m/pipeline-dsl-builder/main/scripts/ssh-remote.sh
+      volumes:
+        - name: ssh
+          mountPath: /ssh
+          secret: "multi-platform-ssh-$(context.taskRun.name)"
+        - name: workdir
+          mountPath: /var/workdir
+          readOnly: false
+          emptyDir: "{}"
+
+      scriptFileUrl: "file://ubi-base-stack.sh"
+        
+
+        
+        
+        
+
+

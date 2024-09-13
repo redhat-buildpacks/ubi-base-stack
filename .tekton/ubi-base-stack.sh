@@ -22,7 +22,8 @@ export SSH_HOST=$(cat /ssh/host)
 export BUILD_DIR=$(cat /ssh/user-dir)
 export SSH_ARGS="-o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=10"
 
-# Export the args to be passed to the script
+echo "### Export different variables which are used within the script like args, repository to fetch, etc"
+export REPOSITORY_TO_FETCH=${REPOSITORY_TO_FETCH}
 export BUILD_ARGS="$@"
 
 ssh $SSH_ARGS "$SSH_HOST" mkdir -p "$BUILD_DIR/workspaces" "$BUILD_DIR/scripts" "$BUILD_DIR/volumes"
@@ -95,9 +96,9 @@ pack --version
 pack config experimental true
 
 echo "### Build the builder image using pack"
-curl -sSL https://github.com/paketo-community/builder-ubi-base/tarball/main | tar -xz -C ${TEMP_DIR}
-mv ${TEMP_DIR}/paketo-community-builder-ubi-base-* ${BUILDPACK_PROJECTS}/builder-ubi-base
-cd ${BUILDPACK_PROJECTS}/builder-ubi-base
+curl -sSL "${REPOSITORY_TO_FETCH}/tarball/main" | tar -xz -C ${TEMP_DIR}
+mv ${TEMP_DIR}/redhat-buildpacks-ubi-base-stack-* ${BUILDPACK_PROJECTS}/ubi-base-stack
+cd ${BUILDPACK_PROJECTS}/ubi-base-stack
 
 for build_arg in "${BUILD_ARGS[@]}"; do
   PACK_ARGS+=" $build_arg"
@@ -155,7 +156,7 @@ rsync -ra scripts "$SSH_HOST:$BUILD_DIR"
 rsync -ra "$HOME/.docker/" "$SSH_HOST:$BUILD_DIR/.docker/"
 
 ssh $SSH_ARGS "$SSH_HOST" \
-  "BUILDER_IMAGE=$BUILDER_IMAGE PLATFORM=$PLATFORM IMAGE=$IMAGE PACK_CLI_VERSION=$PACK_CLI_VERSION GO_VERSION=$GO_VERSION BUILD_ARGS=$BUILD_ARGS" BUILD_DIR=$BUILD_DIR \
+  "REPOSITORY_TO_FETCH=${REPOSITORY_TO_FETCH} BUILDER_IMAGE=$BUILDER_IMAGE PLATFORM=$PLATFORM IMAGE=$IMAGE PACK_CLI_VERSION=$PACK_CLI_VERSION GO_VERSION=$GO_VERSION BUILD_ARGS=$BUILD_ARGS" BUILD_DIR=$BUILD_DIR \
    scripts/script-build.sh
 
 echo "### rsync folders from VM to pod"

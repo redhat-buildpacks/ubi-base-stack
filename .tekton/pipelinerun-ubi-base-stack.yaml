@@ -13,7 +13,7 @@ metadata:
     pipelines.appstudio.openshift.io/type: "build"
     pipelines.openshift.io/strategy: "remote-build"
     appstudio.openshift.io/component: "ubi-base-stack"
-    pipelines.openshift.io/used-by: "build-cloud"
+    pipelines.openshift.io/used-by: "build-cloud-1"
     pipelines.openshift.io/runtime: "java"
   name: "ubi-base-stack"
   namespace: "cmoullia-tenant"

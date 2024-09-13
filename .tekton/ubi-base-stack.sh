@@ -81,6 +81,12 @@ mv jam-linux-amd64 ${USER_BIN_DIR}/jam
 chmod +x ${USER_BIN_DIR}/jam
 jam version
 
+echo "Installing skopeo: ${SKOPEO_VERSION}"
+curl -O -sSL https://github.com/lework/skopeo-binary/releases/download/${SKOPEO_VERSION}/skopeo-linux-amd64
+mv skopeo-linux-amd64 ${USER_BIN_DIR}/skopeo
+chmod +x ${USER_BIN_DIR}/skopeo
+skopeo --version
+
 echo "### Fetch the tarball of the buildpack project to build"
 echo "### Git repo: ${REPOSITORY_TO_FETCH}"
 curl -sSL "${REPOSITORY_TO_FETCH}/tarball/main" | tar -xz -C ${TEMP_DIR}
@@ -124,10 +130,14 @@ cat ${SOURCE_PATH}/images.json | jq -c '.images[]' | while read -r image; do
   )
   echo "jam create-stack \"${args[@]}\""
   jam create-stack "${args[@]}" || echo "The command failed but we continue ..."
-done
 
-echo "### Export the image as OCI"
-podman push "$IMAGE" "oci:konflux-final-image:$IMAGE"
+  echo "### Push the oci image to the registry"
+  IMAGE="quay.io/redhat-user-workloads/cmoullia-tenant/buildpack-remote/ubi-base-stack"
+  skopeo copy "oci-archive:${STACK_DIR}/${OUTPUT_DIR}/build.oci" "docker://$IMAGE/${NAME}-build:latest"
+  skopeo copy "oci-archive:${STACK_DIR}/${OUTPUT_DIR}/run.oci" "docker://$IMAGE/${NAME}-run:latest"
+
+  # podman push "$IMAGE" "oci:konflux-final-image:$IMAGE"
+done
 
 echo "###########################################################"
 echo "### Export: IMAGE_URL, IMAGE_DIGEST & BASE_IMAGES_DIGESTS under: $BUILD_DIR/volumes/workdir/"
@@ -171,7 +181,7 @@ rsync -ra scripts "$SSH_HOST:$BUILD_DIR"
 rsync -ra "$HOME/.docker/" "$SSH_HOST:$BUILD_DIR/.docker/"
 
 ssh $SSH_ARGS "$SSH_HOST" \
-  "REPOSITORY_TO_FETCH=${REPOSITORY_TO_FETCH} BUILDER_IMAGE=$BUILDER_IMAGE PLATFORM=$PLATFORM JAM_VERSION=$JAM_VERSION IMAGE=$IMAGE BUILD_ARGS=$BUILD_ARGS" BUILD_DIR=$BUILD_DIR \
+  "REPOSITORY_TO_FETCH=${REPOSITORY_TO_FETCH} BUILDER_IMAGE=$BUILDER_IMAGE PLATFORM=$PLATFORM JAM_VERSION=$JAM_VERSION SKOPEO_VERSION=$SKOPEO_VERSION IMAGE=$IMAGE BUILD_ARGS=$BUILD_ARGS" BUILD_DIR=$BUILD_DIR \
    scripts/script-build.sh
 
 echo "### rsync folders from VM to pod"

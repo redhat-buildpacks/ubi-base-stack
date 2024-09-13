@@ -36,6 +36,7 @@ job:
         # Buildpack
         - REPOSITORY_TO_FETCH: "https://github.com/redhat-buildpacks/ubi-base-stack"
         - JAM_VERSION: "v2.9.0"
+        - SKOPEO_VERSION: "v1.16.1"
         - BUILD_ARGS:
             - "-v"
       workspaces:
@@ -56,6 +57,7 @@ job:
         - REPOSITORY_TO_FETCH: $(params.REPOSITORY_TO_FETCH)
         - IMAGE: $(params.output-image)
         - JAM_VERSION: $(params.JAM_VERSION)
+        - SKOPEO_VERSION: $(params.SKOPEO_VERSION)
 
       args:
         - $(params.BUILD_ARGS[*])

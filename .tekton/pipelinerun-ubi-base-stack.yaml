@@ -185,7 +185,7 @@ spec:
         steps:
         - args:
           - "$(params.BUILD_ARGS[*])"
-          image: "quay.io/konflux-ci/buildah-task:latest@sha256:860a239c5f25376a435a514ae6d53a5c75b1fa492461d17774e9b7cb32d1e275"
+          image: "quay.io/konflux-ci/buildah-task:latest@sha256:b2d6c32d1e05e91920cd4475b2761d58bb7ee11ad5dff3ecb59831c7572b4d0c"
           name: "run-script"
           script: |-
             #!/usr/bin/env bash

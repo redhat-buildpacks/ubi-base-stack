@@ -470,7 +470,7 @@ spec:
       taskRef:
         params:
         - name: "bundle"
-          value: "quay.io/konflux-ci/tekton-catalog/task-clair-scan:0.1"
+          value: "quay.io/konflux-ci/tekton-catalog/task-clair-scan:0.2"
         - name: "name"
           value: "clair-scan"
         - name: "kind"
@@ -502,7 +502,7 @@ spec:
       taskRef:
         params:
         - name: "bundle"
-          value: "quay.io/konflux-ci/tekton-catalog/task-sast-snyk-check:0.2"
+          value: "quay.io/konflux-ci/tekton-catalog/task-sast-snyk-check:0.3"
         - name: "name"
           value: "sast-snyk-check"
         - name: "kind"
